@@ -120,8 +120,13 @@ public class PlayerController : MonoBehaviour
 
     private void AttackInput(InputAction.CallbackContext context)
     {
-        playerAttack.Attack();
-        animator.SetTrigger("Attack");
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+
+        if (stateInfo.IsName("Idle") || stateInfo.IsName("Player_Attack1_Transition") || stateInfo.IsName("Player_Attack2_Transition"))
+        {
+            playerAttack.Attack();
+            animator.SetTrigger("Attack");
+        }
     }
 
     //private IEnumerator AttackSequence()
