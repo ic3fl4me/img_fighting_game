@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class Entity : MonoBehaviour, IAttackable
+public class Entity : MonoBehaviour, IDamageable
 {
     [SerializeField] private int maxHealth = 100;
     [SerializeField] public int currentHealth;
