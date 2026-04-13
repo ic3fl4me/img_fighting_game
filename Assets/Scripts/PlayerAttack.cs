@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class PlayerAttack : MonoBehaviour
 {
@@ -11,6 +12,11 @@ public class PlayerAttack : MonoBehaviour
     public float attackRange;
     public LayerMask EnemyLayer;
     public int attackDamage;
+
+    //test PowerBar
+    public Image PowerBar;
+    //PowerAmount gibt den Wert womit die Bar verändert wird
+    public float PowerAmount = 100f;
 
     private void Update()
     {
@@ -33,7 +39,15 @@ public class PlayerAttack : MonoBehaviour
         {
             Debug.Log("Enemy Hit");
             hitEnemy.GetComponent<Entity>().TakeDamage(attackDamage);
+
+            //für hit auf gegner steigt die PowerBar
+            PowerAmount += attackDamage;
+            //Cap das PowerBar bis 100 nur geht
+            PowerAmount = Mathf.Clamp(PowerAmount, 0, 100);
+            //FillAmount lässt die Anizeige nach Rechts steigen
+            PowerBar.fillAmount = PowerAmount / 100f;
         }
+
     }
 
     private void OnDrawGizmosSelected()

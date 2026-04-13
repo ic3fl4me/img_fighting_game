@@ -1,8 +1,11 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Entity : MonoBehaviour, IDamageable
 {
+
+
     [SerializeField] private int maxHealth = 100;
     [SerializeField] public int currentHealth;
 
@@ -10,6 +13,10 @@ public class Entity : MonoBehaviour, IDamageable
     [SerializeField] private float shakeStrength = 0.1f;
 
     private Vector3 originalPos;
+
+    //test healthBar
+    public Image healthBar;
+    public float healthAmount = 100f;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     private void Start()
@@ -33,7 +40,18 @@ public class Entity : MonoBehaviour, IDamageable
         }
         StartCoroutine(Shake());
 
-        Debug.Log("Damage Taken");
+        //Debug.Log("Damage Taken");
+        Debug.Log(currentHealth);
+        
+        //dmg der die HealthBar kleiner macht (Copy paste vom HealtManager)
+        healthAmount -= damage;
+        healthBar.fillAmount = healthAmount / 100f;
+
+        //Löschen der Dummys on death
+        if (currentHealth == 0)
+        {
+            Destroy(gameObject);
+        }
     }
 
     private IEnumerator Shake()
