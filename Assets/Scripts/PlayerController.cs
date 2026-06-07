@@ -7,22 +7,26 @@ public class PlayerController : MonoBehaviour
     public PlayerInput player1;
     public PlayerInput player2;
 
-    [SerializeField] private float moveSpeed;
-    private float effectiveSpeed;
-    [SerializeField] private float sprintMultiplier;
-    private Vector2 inputVector;
-    private bool isSprinting;
-    [SerializeField] private float jumpForce;
-    private bool jumpRequested;
     private Rigidbody2D rb;
+    [SerializeField] private float moveSpeed;
+    private Vector2 inputVector;
+    [SerializeField] private float jumpVelocity = 18f;
+    [SerializeField] private float baseGravityScale = 3f;
+    [SerializeField] private float fallMultiplier = 4.5f;
+    [SerializeField] private float lowJumpMultiplier = 7f;
+    [SerializeField] private float airControlSpeed = 8f;
+    private bool jumpHeld;
     [SerializeField] private PlayerAttack playerAttack;
-    public Animator animator;
+    [SerializeField] private Animator animator;
     [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private GameObject attackPos;
 
     [SerializeField] private Transform groundCheck;
     [SerializeField] private float groundCheckRadius = 0.1f;
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private bool isGrounded;
+
+    public bool IsAttacking { get; private set; }
 
     private void Awake()
     {
@@ -54,13 +58,6 @@ public class PlayerController : MonoBehaviour
         Debug.Log(Gamepad.all.Count);
     }
 
-    void OnDrawGizmos()
-    {
-        // visualize in editor
-        Gizmos.color = Color.magenta;
-        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
-    }
-
     private void Update()
     {
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
@@ -68,21 +65,53 @@ public class PlayerController : MonoBehaviour
 
         //PlayerInput();
 
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        IsAttacking = stateInfo.IsName("Player_Attack1") ||
+                      stateInfo.IsName("Player_Attack2") ||
+                      stateInfo.IsName("Player_Attack3") ||
+                      stateInfo.IsName("Player_Attack1_Transition") ||
+                      stateInfo.IsName("Player_Attack2_Transition") ||
+                      stateInfo.IsName("Player_Attack3_Transition");
+
+        // Dreht den AI Sprite und die Attack Hitbox in die Bewegungsrichtung
         if (inputVector.x < 0)
+        {
             spriteRenderer.flipX = true;
-        else if (inputVector.x > 0)
+            attackPos.transform.localPosition = new Vector3(-Mathf.Abs(attackPos.transform.localPosition.x), attackPos.transform.localPosition.y, attackPos.transform.localPosition.z);
+        } else if (inputVector.x > 0)
+        {
             spriteRenderer.flipX = false;
+            attackPos.transform.localPosition = new Vector3(Mathf.Abs(attackPos.transform.localPosition.x), attackPos.transform.localPosition.y, attackPos.transform.localPosition.z);
+        }
     }
 
     private void FixedUpdate()
     {
-        HandlePlayerInputs();
-
-        if (jumpRequested && isGrounded)
+        if (IsAttacking)
         {
-            Jump();
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+            return;
         }
+
+        // Nähert die horizontale Geschwindigkeit in der Luft langsam an die Zielgeschwindigkeit an
+        if (!isGrounded)
+        {
+            Vector2 targetVelocity = new Vector2(inputVector.x * airControlSpeed, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(Mathf.MoveTowards(rb.linearVelocity.x, targetVelocity.x, 50f * Time.fixedDeltaTime), rb.linearVelocity.y);
+        }
+
+        SetMovementSpeed();
+        ModifyGravity();
     }
+
+    void OnDrawGizmos()
+    {
+        // visualize in editor
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+    }
+
+
     /*
     private void PlayerInput()
     {
@@ -97,64 +126,54 @@ public class PlayerController : MonoBehaviour
         inputVector = inputActions.Player.Move.ReadValue<Vector2>();
     }
     */
-    private void HandlePlayerInputs()
-    {
-        effectiveSpeed = isSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
-        //transform.Translate(effectiveSpeed * Time.deltaTime * inputVector * new Vector3(1f, 0f, 1f));
 
+    // Setzt die horizontale Geschwindigkeit des Spielers basierend auf dem Input
+    private void SetMovementSpeed()
+    {
         rb.linearVelocity = new Vector2(
-        inputVector.x * effectiveSpeed,
+        inputVector.x * moveSpeed,
         rb.linearVelocity.y
         );
     }
-    /*
-    private void StartSprinting(InputAction.CallbackContext context)
-    {
-        isSprinting = true;
-    }
 
-    private void StopSprinting(InputAction.CallbackContext context)
-    {
-        isSprinting = false;
-    }
-
-    private void StartJumping(InputAction.CallbackContext context)
-    {
-        jumpRequested = true;
-    }
-    private void StopJumping(InputAction.CallbackContext context)
-    {
-        jumpRequested = false;
-    }
-    */
     private void Jump()
     {
-        rb.AddForce(new Vector3(0f, jumpForce, 0f), ForceMode2D.Impulse);
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpVelocity);
+    }
+
+    // Ändert die Schwerkraft, je nachdem ob der Spieler fällt, springt und springen hält oder springt und nicht die Taste hält
+    void ModifyGravity()
+    {
+        if (rb.linearVelocity.y < 0)
+        {
+            rb.gravityScale = fallMultiplier;
+        }
+        else if (rb.linearVelocity.y > 0 && !jumpHeld)
+        {
+            rb.gravityScale = lowJumpMultiplier;
+        }
+        else
+        {
+            rb.gravityScale = baseGravityScale;
+        }
     }
 
     private void AttackInput(InputAction.CallbackContext context)
     {
         AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
 
-        if (stateInfo.IsName("Idle") || stateInfo.IsName("Player_Attack1_Transition") || stateInfo.IsName("Player_Attack2_Transition"))
+        if (stateInfo.IsName("Idle") ||
+            stateInfo.IsName("Player_Walk") ||
+            stateInfo.IsName("Player_Attack1_Transition") ||
+            stateInfo.IsName("Player_Attack2_Transition"))
         {
             playerAttack.Attack();
             animator.SetTrigger("Attack");
         }
     }
 
-    //private IEnumerator AttackSequence()
-    //{
-    //    attackCollider.enabled = true;
-
-    //    yield return new WaitForSeconds(0.1f);
-
-    //    attackCollider.enabled = false;
-    //}
-
     //private void OnOpenUI(InputAction.CallbackContext context)
     //{
-    //    // for own menu
     //    OpenCanvas();
     //}
 
@@ -169,22 +188,18 @@ public class PlayerController : MonoBehaviour
         inputVector = context.ReadValue<Vector2>();
     }
 
-    public void OnSprint(InputAction.CallbackContext context)
-    {
-        if (context.performed)
-            isSprinting = true;
-
-        if (context.canceled)
-            isSprinting = false;
-    }
-
     public void OnJump(InputAction.CallbackContext context)
     {
+        if (context.started && isGrounded)
+        {
+            Jump();
+        }
+
         if (context.performed)
-            jumpRequested = true;
+            jumpHeld = true;
 
         if (context.canceled)
-            jumpRequested = false;
+            jumpHeld = false;
     }
 
     public void OnAttack(InputAction.CallbackContext context)
