@@ -11,10 +11,12 @@ public class PlayerAttack : MonoBehaviour
     public LayerMask EnemyLayer;
     public int attackDamage;
 
+
     //test PowerBar
     public Image PowerBar;
     //PowerAmount gibt den Wert womit die Bar verändert wird
     public float PowerAmount = 100f;
+
 
     private void Update()
     {
