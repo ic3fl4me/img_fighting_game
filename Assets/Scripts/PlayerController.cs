@@ -26,12 +26,23 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private bool isGrounded;
 
+    [Header("Dash")]
+    [SerializeField] private float dashSpeed = 25f;
+    [SerializeField] private float dashDuration = 0.15f;
+    [SerializeField] private int maxDashes = 1;
+    private int dashesLeft;
+    private bool isDashing;
+    private bool facingRight = true;
+    private float dashTimeRemaining;
+
     public bool IsAttacking { get; private set; }
+    public bool IsDashing => isDashing;
 
     private void Awake()
     {
         //inputActions = new InputActions();
         rb = GetComponent<Rigidbody2D>();
+        dashesLeft = maxDashes;
 
     }
 
@@ -60,7 +71,15 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        bool wasGrounded = isGrounded;
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+
+        // Setzt die verfügbaren Dashes zurück, sobald der Boden berührt wird
+        if (isGrounded && !wasGrounded)
+        {
+            dashesLeft = maxDashes;
+        }
+
         animator.SetFloat("Speed", inputVector.magnitude);
 
         //PlayerInput();
@@ -76,17 +95,39 @@ public class PlayerController : MonoBehaviour
         // Dreht den AI Sprite und die Attack Hitbox in die Bewegungsrichtung
         if (inputVector.x < 0)
         {
+            facingRight = false;
             spriteRenderer.flipX = true;
             attackPos.transform.localPosition = new Vector3(-Mathf.Abs(attackPos.transform.localPosition.x), attackPos.transform.localPosition.y, attackPos.transform.localPosition.z);
-        } else if (inputVector.x > 0)
+        }
+        else if (inputVector.x > 0)
         {
+            facingRight = true;
             spriteRenderer.flipX = false;
             attackPos.transform.localPosition = new Vector3(Mathf.Abs(attackPos.transform.localPosition.x), attackPos.transform.localPosition.y, attackPos.transform.localPosition.z);
+        }
+
+        // Zählt die verbleibende Dash-Dauer herunter
+        if (isDashing)
+        {
+            dashTimeRemaining -= Time.deltaTime;
+            if (dashTimeRemaining <= 0f)
+            {
+                EndDash();
+            }
         }
     }
 
     private void FixedUpdate()
     {
+        // Während des Dashs läuft eine eigene, feste horizontale Geschwindigkeit - die Y-Velocity bleibt unberührt, damit die Schwerkraft normal weiter wirkt
+        if (isDashing)
+        {
+            float dashDirection = facingRight ? 1f : -1f;
+            rb.linearVelocity = new Vector2(dashDirection * dashSpeed, rb.linearVelocity.y);
+            ModifyGravity();
+            return;
+        }
+
         if (IsAttacking)
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
@@ -141,6 +182,23 @@ public class PlayerController : MonoBehaviour
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpVelocity);
     }
 
+    private void StartDash()
+    {
+        if (dashesLeft <= 0 || isDashing)
+        {
+            return;
+        }
+
+        dashesLeft--;
+        isDashing = true;
+        dashTimeRemaining = dashDuration;
+    }
+
+    private void EndDash()
+    {
+        isDashing = false;
+    }
+
     // Ändert die Schwerkraft, je nachdem ob der Spieler fällt, springt und springen hält oder springt und nicht die Taste hält
     void ModifyGravity()
     {
@@ -185,6 +243,7 @@ public class PlayerController : MonoBehaviour
     //neu 2 playerinput Leon
     public void OnMove(InputAction.CallbackContext context)
     {
+        Debug.Log($"{gameObject.name} - {context.action.name}");
         inputVector = context.ReadValue<Vector2>();
     }
 
@@ -207,6 +266,14 @@ public class PlayerController : MonoBehaviour
         if (context.performed)
         {
             AttackInput(context);
+        }
+    }
+
+    public void OnDash(InputAction.CallbackContext context)
+    {
+        if (context.started)
+        {
+            StartDash();
         }
     }
 }
