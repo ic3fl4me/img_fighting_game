@@ -784,7 +784,7 @@ MonoBehaviour:
   playerAttack: {fileID: 555154899}
   animator: {fileID: 555154898}
   spriteRenderer: {fileID: 555154905}
-  attackPos: {fileID: 0}
+  attackPos: {fileID: 1240097558}
   groundCheck: {fileID: 935508152}
   groundCheckRadius: 0.1
   groundLayer:
@@ -2010,7 +2010,7 @@ MonoBehaviour:
   playerAttack: {fileID: 1173472647}
   animator: {fileID: 1173472648}
   spriteRenderer: {fileID: 1173472641}
-  attackPos: {fileID: 0}
+  attackPos: {fileID: 1252739550}
   groundCheck: {fileID: 60454252}
   groundCheckRadius: 0.1
   groundLayer:

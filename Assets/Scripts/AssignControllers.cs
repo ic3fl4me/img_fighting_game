@@ -8,6 +8,7 @@ public class AssignControllers : MonoBehaviour
 
     void Start()
     {
+        /*
         if (Gamepad.all.Count < 2)
         {
             Debug.LogError("Nicht genug Controller verbunden!");
@@ -21,5 +22,6 @@ public class AssignControllers : MonoBehaviour
         player2.SwitchCurrentControlScheme(Gamepad.all[1]);
 
         Debug.Log(Gamepad.all.Count);
+        */
     }
 }

@@ -4,10 +4,8 @@ using UnityEngine.UI;
 
 public class Entity : MonoBehaviour, IDamageable
 {
-
-
-    [SerializeField] private int maxHealth = 100;
-    [SerializeField] public int currentHealth;
+    [SerializeField] private float maxHealth = 100;
+    [SerializeField] public float currentHealth;
 
     [SerializeField] private float shakeDuration = 0.15f;
     [SerializeField] private float shakeStrength = 0.1f;
@@ -16,7 +14,6 @@ public class Entity : MonoBehaviour, IDamageable
 
     //test healthBar
     public Image healthBar;
-    public float healthAmount = 100f;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     private void Start()
@@ -40,17 +37,18 @@ public class Entity : MonoBehaviour, IDamageable
         }
         StartCoroutine(Shake());
 
-        //Debug.Log("Damage Taken");
-        Debug.Log(currentHealth);
-        
-        //dmg der die HealthBar kleiner macht (Copy paste vom HealtManager)
-        healthAmount -= damage;
-        healthBar.fillAmount = healthAmount / 100f;
+        healthBar.fillAmount = currentHealth / maxHealth;
 
         //Löschen der Dummys on death
-        if (currentHealth == 0)
+        if (currentHealth == 0 && gameObject.layer == LayerMask.NameToLayer("Enemy"))
         {
             Destroy(gameObject);
+        }
+        else if (currentHealth == 0 && gameObject.layer == LayerMask.NameToLayer("Player"))
+        {
+            GetComponent<BoxCollider2D>().enabled = false;
+            GetComponent<SpriteRenderer>().enabled = false;
+            GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
         }
     }
 

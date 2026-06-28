@@ -32,12 +32,9 @@ public class PlayerAttack : MonoBehaviour
 
     public void Attack()
     {
-        Debug.Log("Attacking");
         Collider2D[] enemiesToDamage = Physics2D.OverlapCircleAll(attackPos.position, attackRange, EnemyLayer);
-        Debug.Log(enemiesToDamage.Length + ": " + enemiesToDamage.ToString());
         foreach (Collider2D hitEnemy in enemiesToDamage)
         {
-            Debug.Log("Enemy Hit");
             hitEnemy.GetComponent<Entity>().TakeDamage(attackDamage);
 
             //für hit auf gegner steigt die PowerBar
@@ -47,7 +44,6 @@ public class PlayerAttack : MonoBehaviour
             //FillAmount lässt die Anizeige nach Rechts steigen
             PowerBar.fillAmount = PowerAmount / 100f;
         }
-
     }
 
     private void OnDrawGizmosSelected()
